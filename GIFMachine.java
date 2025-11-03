@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import java.net.*;
 
-public class CrimsonBaron {
+public class GIFMachine {
     public static void main(String[] args) throws IOException {
         // Create a new HttpServer instance
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
@@ -21,52 +21,50 @@ public class CrimsonBaron {
     static class MyHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            String response = "<html>" +
-                    //website title
-                    "<head><title> Gateway into my computer</title></head>" +
-                    "<body style='background-color: black;'>" +
-                    //First words listed on site/ call tag
-                    "<body>" +
-                    "<div style='text-align: center;'>" +
-                    // "<h1 style='color: white; style='margin-top: 10px;'>What brings you here? </h1>" +
-                    "<img src='https://media.tenor.com/RtepJNKCLQcAAAAM/game-skull.gif' alt='Custom GIF' style='display: block; margin: 0 auto;'/>" +
-                    //making the input promt
-                    "<form method='post'>" +
-                    "<label for='name' style='color: white; style='margin-top: 1000px;'>Say my name: <input type='text' name='name'style='display: block; margin: 0 auto;'/>" +
-                    //reading and taking the input prompt in
-                    "<input type='submit' value='Submit' block; style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>" +
-                    "</form>" +
-                    "</body>" +
-                    "</html>";
+            String response;
+
+            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())){
+                response = """
+                    <html>
+                        <head><title>GIF Machine</title></head>
+                        <body style='background-color: black; text-align: center;'>
+                            <h1 style='color: white; margin-top: 100px;'> GIF MACHINE </h1>
+                            <!--Color Block behind GIFs -->
+                            <div style='
+                                background-color: grey;
+                                width: 400px;
+                                margin: 0 auto;
+                                padding: 20px;
+                                border-radius: 15px;'> 
+                            <img src='https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp'
+                                alt='Custom GIF'
+                                style='display: block; margin: 0 auto;'/>
+                            <form method='post'>
+                                <input type='submit' value='Download GIF'
+                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
+                                    <input type='submit' value='Generate GIF'
+                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
+                                    <input type='submit' value='GIF History'
+                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
+                            </form>
+                        </body>
+                    </html>
+                """;
+            }
 
             // Check if the request method is POST
-            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                // Parse the request body to get the input value
-                InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
-                BufferedReader br = new BufferedReader(isr);
-                StringBuilder buf = new StringBuilder();
-                int b;
-                while ((b = br.read()) != -1) {
-                    buf.append((char) b);
-                }
-                br.close();
-                isr.close();
-                String Body = buf.toString();
-                String[] parts = Body.split("=");
-                String name;
-                if(parts.length > 1){
-                    name = parts[1];
-                }
-                else{
-                    name = "";
-                }
-                // Filler input with the name password
-                if ("DarthTyrannus2002".equals(name)) {
-                    response = "<html><body><h1>CHECK FOR PACKETS FROM 8080</h1></body></html>";
-                    //receivePacket(59037);
-                    sendPacket("I was Betrayed");
-                } 
+            else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                response = """
+                    <html>
+                        <body style='background-color: black; test-align: center;'>
+                            <h1 style='color: white;'> New Screen! </h>
+                        </body>
+                    </html>
+                """;
+            }
 
+            else{
+                response = "unsupported";
             }
 
             // Set the response headers and send the response
