@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import java.net.*;
 
-public class CrimsonBaron {
+public class GIFMachine {
     public static void main(String[] args) throws IOException {
         // Create a new HttpServer instance
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
