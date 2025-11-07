@@ -1,9 +1,7 @@
 import java.io.*;
 import com.sun.net.httpserver.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+
 import com.google.gson.*;
 import java.util.*;
 
@@ -33,7 +31,7 @@ public class GIFMachine {
                     <body style='background-color: black; text-align: center;'>
                         <h1 style='color: white; margin-top: 100px;'>GIF MACHINE</h1>
                         <div style='background-color: grey; width: 400px; margin: 0 auto; padding: 20px; border-radius: 15px;'>
-                            <img src='https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp'
+                            <img src='https://media.tenor.com/bA5Z9nSS5LsAAAAM/gif-machine.gif'
                                  alt='Custom GIF'
                                  style='display: block; margin: 0 auto;'/>
                             <form action='/download' method='post'>
@@ -72,13 +70,28 @@ public class GIFMachine {
     }
 
     static class GenerateHandler implements HttpHandler {
+
+        // Keep track of seen GIF URLs (avoid repeats)
+        private static final Set<String> seenGifs = new HashSet<>();
+    // Store Tenor pagination token for continuing deeper searches
+        private static String nextPos = null;
+    // Topics to randomly choose from
+        private static final String[] TOPICS = {
+        "funny", "cats", "dogs", "memes", "reactions", "dance", "celebration",
+        "fail", "happy", "sad", "excited", "sports", "gaming", "cute", "anime"
+        };
+
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             
             String API_KEY = "AIzaSyCd-hEmDQxPiVHfxHiMOz4JR4tSDFHbH0A";
+            String topic = TOPICS[new Random().nextInt(TOPICS.length)];
+
             String apiURL = String.format(
-            "https://tenor.googleapis.com/v2/featured?key=%s&limit=20&contentfilter=medium",
-            API_KEY
+            "https://tenor.googleapis.com/v2/search?q=%s&key=%s&limit=20&contentfilter=medium%s",
+            topic,
+            API_KEY,
+            (nextPos != null ? "&pos=" + nextPos : "")
         );
 
             HttpURLConnection conn = (HttpURLConnection) new URL(apiURL).openConnection();
@@ -102,16 +115,23 @@ public class GIFMachine {
             for (JsonElement e : results) {
                 JsonObject mediaFormats = e.getAsJsonObject().getAsJsonObject("media_formats");
                 if (mediaFormats.has("gif")) {
-                    String url = mediaFormats.getAsJsonObject("gif")
-                            .get("url").getAsString();
+                    String url = mediaFormats.getAsJsonObject("gif").get("url").getAsString();
                     gifUrls.add(url);
                 }
             }
 
-            // Pick one random GIF
-            String ranGIF = gifUrls.isEmpty()
-                    ? "https://media.tenor.com/4EhUju6UJtEAAAAM/grrr-rawr.webp"
-                    : gifUrls.get(new Random().nextInt(gifUrls.size()));
+            // Pick one random GIF that hasn't been shown yet
+        String ranGIF = null;
+        int attempts = 0;
+        while (attempts < 10 && (ranGIF == null || seenGifs.contains(ranGIF))) {
+            ranGIF = gifUrls.get(new Random().nextInt(gifUrls.size()));
+            attempts++;
+        }
+        if (ranGIF == null) {
+            ranGIF = "https://media.tenor.com/4EhUju6UJtEAAAAM/grrr-rawr.webp";
+        } else {
+            seenGifs.add(ranGIF);
+        }
 
             String response = """
                 <html>
@@ -119,7 +139,7 @@ public class GIFMachine {
                     <body style='background-color: black; text-align: center;'>
                         <h1 style='color: white; margin-top: 100px;'>GIF MACHINE</h1>
                         <div style='background-color: grey; width: 400px; margin: 0 auto; padding: 20px; border-radius: 15px;'>
-                            <img src='%s' alt='Custom GIF' style='display: block; margin: 0 auto;'/>
+                            <img src='%s' alt='Custom GIF' style='display: block; margin: 0 auto; max-width: 100%%; max-height: 300px; border-radius: 10px; object-fit: contain;'/>
                             <form action='/download' method='post'>
                                 <input type='submit' value='Download GIF'
                                     style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
