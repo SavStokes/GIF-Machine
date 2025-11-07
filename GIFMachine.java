@@ -1,96 +1,186 @@
 import java.io.*;
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.*;
 import java.net.*;
+import java.util.*;
 
-public class CrimsonBaron {
+public class GIFMachine {
+
+    // GIF history (static)
+    private static final List<String> gifHistory = new ArrayList<>();
+
     public static void main(String[] args) throws IOException {
-        // Create a new HttpServer instance
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
 
-        // Create a new context to listen for request with the path /final_destination
-        server.createContext("/final_destination", new MyHandler());
+        server.createContext("/final_destination", new MainPageHandler());
+        server.createContext("/download", new DownloadHandler());
+        server.createContext("/generate", new GenerateHandler());
+        server.createContext("/history", new HistoryHandler());
 
-        // Start the server
         server.start();
         System.out.println("Can find the site @ http://localhost:8080/final_destination");
     }
 
-    // Define the handler for incoming requests
-    static class MyHandler implements HttpHandler {
+    static class MainPageHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            String response;
-
-            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())){
-                response = """
-                    <html>
-                        <head><title>GIF Machine</title></head>
-                        <body style='background-color: black; text-align: center;'>
-                            <h1 style='color: white; margin-top: 100px;'> GIF MACHINE </h1>
-                            <!--Color Block behind GIFs -->
-                            <div style='
-                                background-color: grey;
-                                width: 400px;
-                                margin: 0 auto;
-                                padding: 20px;
-                                border-radius: 15px;'> 
-                            <img src='https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp'
-                                alt='Custom GIF'
-                                style='display: block; margin: 0 auto;'/>
-                            <form method='post'>
+            String lastGIF = gifHistory.isEmpty() ? "https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp" : gifHistory.get(gifHistory.size() - 1);
+            String response = """
+                <html>
+                    <head><title>GIF Machine</title></head>
+                    <body style='background-color: black; text-align: center;'>
+                        <h1 style='color: white; margin-top: 100px;'>GIF MACHINE</h1>
+                        <div style='background-color: grey; width: 400px; margin: 0 auto; padding: 20px; border-radius: 15px;'>
+                            <img src='%s' alt='Custom GIF' style='display: block; margin: 0 auto; max-width:100%%; height:auto;'/>
+                            <form action='/download' method='post'>
                                 <input type='submit' value='Download GIF'
                                     style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
-                                    <input type='submit' value='Generate GIF'
-                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
-                                    <input type='submit' value='GIF History'
+                            </form>
+                            <form action='/generate' method='post'>
+                                <input type='submit' value='Generate GIF'
                                     style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
                             </form>
-                        </body>
-                    </html>
-                """;
-            }
-
-            // Check if the request method is POST
-            else if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                response = """
-                    <html>
-                        <body style='background-color: black; test-align: center;'>
-                            <h1 style='color: white;'> New Screen! </h>
-                        </body>
-                    </html>
-                """;
-            }
-
-            else{
-                response = "unsupported";
-            }
-
-            // Set the response headers and send the response
-            exchange.getResponseHeaders().set("Content-Type", "text/html");
-            exchange.sendResponseHeaders(200, response.length());
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+                            <form action='/history' method='post'>
+                                <input type='submit' value='GIF History'
+                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
+                            </form>
+                        </div>
+                    </body>
+                </html>
+            """.formatted(lastGIF);
+            sendResponse(exchange, response);
         }
-        private void sendPacket(String message) {
+    }
+
+    static class GenerateHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String gifs[] = {
+                // Original direct links
+                "https://media.tenor.com/m/NHS-2VCdPdMAAAAC/wolfy.gif",
+                "https://media.tenor.com/AI_casj8FJwAAAA1/did-not-mean-it.webp",
+                "https://media.tenor.com/pGGMMerDTxkAAAA1/laugh-funny.webp",
+                "https://media.tenor.com/8WFMlcnmaisAAAA1/black-cat-crazy-cat.webp",
+                "https://media.tenor.com/9h8C7tL-dy0AAAAC/dancing-sponge-bob.gif",
+                "https://media.tenor.com/XKwD0kNrzQ4AAAAC/monkey-dance.gif",
+                "https://media.tenor.com/hqS4hh0oZ5UAAAAC/drake-dance.gif",
+                "https://media.tenor.com/4tW7PvDSbfsAAAAC/angry-pikachu.gif",
+                "https://media.tenor.com/_G1iIh1kGmUAAAAC/cat-freak-out.gif",
+                "https://media.tenor.com/wEPO2E3H0GkAAAAC/will-smith-dance.gif"
+            };
+
+            Random rand = new Random();
+            int index = rand.nextInt(gifs.length);
+            String ranGIF = gifs[index];
+        
+
+            String response = """
+                <html>
+                    <head><title>GIF Machine</title></head>
+                    <body style='background-color: black; text-align: center;'>
+                        <h1 style='color: white; margin-top: 100px;'>GIF MACHINE</h1>
+                        <div style='background-color: grey; width: 400px; margin: 0 auto; padding: 20px; border-radius: 15px;'>
+                            <img src='%s' alt='Custom GIF' style='display: block; margin: 0 auto; max-width:100%%; height:auto;'/>
+                            <form action='/download' method='post'>
+                                <input type='submit' value='Download GIF'
+                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
+                            </form>
+                            <form action='/generate' method='post'>
+                                <input type='submit' value='Generate GIF'
+                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
+                            </form>
+                            <form action='/history' method='post'>
+                                <input type='submit' value='GIF History'
+                                    style='margin-top: 10px; width: 150px; height: 50px; font-size: 16px;'/>
+                            </form>
+                        </div>
+                    </body>
+                </html>
+            """.formatted(ranGIF);
+
+            sendResponse(exchange, response);
+        }
+    }
+
+    static class DownloadHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (gifHistory.isEmpty()) {
+                String response = """
+                    <html>
+                        <body style='background-color:black;color:white;text-align:center;'>
+                            <h1>No GIF generated yet.</h1>
+                            <a href='/final_destination' style='color:yellow;'>Back</a>
+                        </body>
+                    </html>
+                """;
+                sendResponse(exchange, response);
+                return;
+            }
+
+            String lastGIF = gifHistory.get(gifHistory.size() - 1);
             try {
-                DatagramSocket sender = new DatagramSocket();
-                InetAddress address = InetAddress.getByName("localhost"); // Replace with the recipient's address
-                byte[] buffer = message.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 8080); // Replace with the recipient's port
-                sender.send(packet);
-                sender.close();
+                URL url = new URL(lastGIF);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setDoInput(true);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(20000);
+
+                int status = conn.getResponseCode();
+                if (status != 200) {
+                    sendResponse(exchange, "Failed to fetch GIF. HTTP " + status, 502);
+                    return;
+                }
+
+                String path = url.getPath();
+                String filename = path.substring(path.lastIndexOf('/') + 1);
+                if (!filename.contains(".")) filename = "download.gif";
+
+                exchange.getResponseHeaders().set("Content-Type", conn.getContentType());
+                exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+                try (InputStream in = conn.getInputStream(); OutputStream out = exchange.getResponseBody()) {
+                    exchange.sendResponseHeaders(200, 0);
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    while ((read = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, read);
+                    }
+                }
+
+                conn.disconnect();
             } catch (Exception e) {
-                e.printStackTrace();
+                sendResponse(exchange, "Error downloading GIF: " + e.getMessage(), 500);
             }
         }
     }
 
-}
+    static class HistoryHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            StringBuilder sb = new StringBuilder();
+            sb.append("""
+                <html>
+                    <body style='background-color:black;color:white;text-align:center;'>
+                        <h1>GIF History Page</h1>
+            """);
 
+            sendResponse(exchange, sb.toString());
+        }
+    }
 
+    private static void sendResponse(HttpExchange exchange, String response) throws IOException {
+        sendResponse(exchange, response, 200);
+    }
+
+    private static void sendResponse(HttpExchange exchange, String response, int status) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+        byte[] bytes = response.getBytes("UTF-8");
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
 }
 
 
