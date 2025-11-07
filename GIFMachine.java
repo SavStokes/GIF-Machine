@@ -1,23 +1,15 @@
 import java.io.*;
 import com.sun.net.httpserver.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import com.google.gson.*;
+import java.util.*;
 
 
 public class GIFMachine {
     public static void main(String[] args) throws IOException {
-
-        String gifs[] = {
-            "tenor.com/view/feeling-good-gif-XXX", 
-            "tenor.com/view/i-m-in-a-glass-case-of-emotion-gif-YYY",
-            "tenor.com/view/crying-cute-cat-gif-ZZZ",
-            "tenor.com/view/dancing-penguin-feeling-good-gif-AAA",
-            "tenor.com/view/hug-bear-sending-you-hugs-gif-BBB",
-            "tenor.com/view/how-are-you-feeling-gif-CCC",
-            "tenor.com/view/i-just-have-a-lot-of-feelings-gif-DDD", 
-            "tenor.com/view/roller-coaster-of-emotions-gif-EEE",
-            "tenor.com/view/get-well-soon-teddy-bear-gif-FFF",
-            "tenor.com/view/feels-good-man-cat-gif-GGG"};
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
 
@@ -83,22 +75,43 @@ public class GIFMachine {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             
-            String gifs[] = {
-            "https://media1.tenor.com/m/NHS-2VCdPdMAAAAC/wolfy.gif", 
-            "https://media.tenor.com/AI_casj8FJwAAAA1/did-not-mean-it.webp",
-            "https://media.tenor.com/pGGMMerDTxkAAAA1/laugh-funny.webp",
-            "https://media.tenor.com/8WFMlcnmaisAAAA1/black-cat-crazy-cat.webp",
-            "https://tenor.com/view/hug-bear-sending-you-hugs-gif-BBB",
-            "https://tenor.com/view/how-are-you-feeling-gif-CCC",
-            "https://tenor.com/view/i-just-have-a-lot-of-feelings-gif-DDD", 
-            "https://tenor.com/view/roller-coaster-of-emotions-gif-EEE",
-            "https://tenor.com/view/get-well-soon-teddy-bear-gif-FFF",
-            "https://tenor.com/view/feels-good-man-cat-gif-GGG"};
+            String API_KEY = "AIzaSyCd-hEmDQxPiVHfxHiMOz4JR4tSDFHbH0A";
+            String apiURL = String.format(
+            "https://tenor.googleapis.com/v2/featured?key=%s&limit=20&contentfilter=medium",
+            API_KEY
+        );
 
-            Random rand = new Random();
+            HttpURLConnection conn = (HttpURLConnection) new URL(apiURL).openConnection();
+            conn.setRequestMethod("GET");
 
-            int index = rand.nextInt(gifs.length);
-            String ranGIF = gifs[index];
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            StringBuilder content = new StringBuilder();
+            String line;
+            while ((line = in.readLine()) != null) {
+                content.append(line);
+            }
+            in.close();
+            conn.disconnect();
+
+            // Parse JSON using Gson
+            JsonObject root = JsonParser.parseString(content.toString()).getAsJsonObject();
+            JsonArray results = root.getAsJsonArray("results");
+
+            List<String> gifUrls = new ArrayList<>();
+
+            for (JsonElement e : results) {
+                JsonObject mediaFormats = e.getAsJsonObject().getAsJsonObject("media_formats");
+                if (mediaFormats.has("gif")) {
+                    String url = mediaFormats.getAsJsonObject("gif")
+                            .get("url").getAsString();
+                    gifUrls.add(url);
+                }
+            }
+
+            // Pick one random GIF
+            String ranGIF = gifUrls.isEmpty()
+                    ? "https://media.tenor.com/4EhUju6UJtEAAAAM/grrr-rawr.webp"
+                    : gifUrls.get(new Random().nextInt(gifUrls.size()));
 
             String response = """
                 <html>
