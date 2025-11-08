@@ -1,11 +1,11 @@
-import java.io.*;
+port java.io.*;
 import com.sun.net.httpserver.*;
 import java.net.*;
 import java.util.*;
 
 public class GIFMachine {
 
-    // GIF history (static)
+    // Creates a list of the gifs so that the download can read from it and download the gifs url
     private static final List<String> gifHistory = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
@@ -71,7 +71,12 @@ public class GIFMachine {
             Random rand = new Random();
             int index = rand.nextInt(gifs.length);
             String ranGIF = gifs[index];
-        
+
+            // Add to history
+            gifHistory.add(ranGIF);
+            if (gifHistory.size() > 9) {
+                gifHistory.remove(0);
+            }
 
             String response = """
                 <html>
@@ -131,7 +136,7 @@ public class GIFMachine {
                     sendResponse(exchange, "Failed to fetch GIF. HTTP " + status, 502);
                     return;
                 }
-
+                //Gets the URL name to read and chnges the name for downloading if
                 String path = url.getPath();
                 String filename = path.substring(path.lastIndexOf('/') + 1);
                 if (!filename.contains(".")) filename = "download.gif";
@@ -149,6 +154,7 @@ public class GIFMachine {
                 }
 
                 conn.disconnect();
+            //Error Handling if there is a problem downloading the GIF
             } catch (Exception e) {
                 sendResponse(exchange, "Error downloading GIF: " + e.getMessage(), 500);
             }
@@ -164,6 +170,7 @@ public class GIFMachine {
                     <body style='background-color:black;color:white;text-align:center;'>
                         <h1>GIF History Page</h1>
             """);
+
 
             sendResponse(exchange, sb.toString());
         }
@@ -182,5 +189,3 @@ public class GIFMachine {
         }
     }
 }
-
-
