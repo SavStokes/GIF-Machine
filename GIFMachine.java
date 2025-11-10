@@ -174,32 +174,36 @@ public class GIFMachine {
             sendResponse(exchange, response);
             return;
         }
+        //Get Connection to GIF URL
         String lastGIF = gifHistory.get(gifHistory.size() - 1);
             try {
                 URL url = new URL(lastGIF);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setDoInput(true);
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(20000);
+                conn.setConnectTimeout(10000);  //timeout if server doesn't respond
+                conn.setReadTimeout(20000);  //timout if server takes too long
 
                 int status = conn.getResponseCode();
+                //if request fail then stop
                 if (status != 200) {
                     //sendResponse(exchange, "Failed to fetch GIF. HTTP " + status, 502);
                     return;
                 }
-
+                //Gets file name from URL path
                 String path = url.getPath();
                 String filename = path.substring(path.lastIndexOf('/') + 1);
+                //give default filename if it does not have one
                 if (!filename.contains(".")) filename = "download.gif";
-
+                //tells browser to download and not display
                 exchange.getResponseHeaders().set("Content-Type", conn.getContentType());
                 exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-
+                //show GIF data to browser
                 try (InputStream in = conn.getInputStream(); OutputStream out = exchange.getResponseBody()) {
                     exchange.sendResponseHeaders(200, 0);
                     byte[] buffer = new byte[8192];
                     int read;
+                    //read and forward data in chunks
                     while ((read = in.read(buffer)) != -1) {
                         out.write(buffer, 0, read);
                     }
@@ -502,3 +506,4 @@ public class GIFMachine {
         }
     }
 }
+
