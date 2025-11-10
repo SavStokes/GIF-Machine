@@ -16,7 +16,8 @@ public class GIFMachine {
         // Each button goes to its own path
         server.createContext("/download", new DownloadHandler());
         server.createContext("/generate", new GenerateHandler());
-        server.createContext("/history", new HistoryHandler());
+
+
 
         server.start();
         System.out.println("Can find the site @ http://localhost:8080/final_destination");
@@ -136,10 +137,6 @@ public class GIFMachine {
                             <input type="submit" value="Generate GIF"
                                    style="margin-top: 10px; width: 150px; height: 50px; font-size: 16px;"/>
                         </form>
-                        <form action="/history" method="post">
-                            <input type="submit" value="GIF History"
-                                   style="margin-top: 10px; width: 150px; height: 50px; font-size: 16px;"/>
-                        </form>
                     </div>
                 </div>
 
@@ -160,8 +157,10 @@ public class GIFMachine {
     }
 
     static class DownloadHandler implements HttpHandler {
+       
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            gifHistory.add("https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp");
             if (gifHistory.isEmpty()) {
             String response = """
                 <html>
