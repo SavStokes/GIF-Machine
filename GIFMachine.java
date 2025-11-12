@@ -17,8 +17,6 @@ public class GIFMachine {
         server.createContext("/download", new DownloadHandler());
         server.createContext("/generate", new GenerateHandler());
 
-
-
         server.start();
         System.out.println("Can find the site @ http://localhost:8080/final_destination");
     }
@@ -26,7 +24,17 @@ public class GIFMachine {
     static class MainPageHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            String lastGIF = gifHistory.isEmpty() ? "https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp" : gifHistory.get(gifHistory.size() - 1);
+            //String lastGIF = gifHistory.isEmpty() ? "https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp" : gifHistory.get(gifHistory.size() - 1);
+            String query = exchange.getRequestURI().getQuery();
+String selectedGIF = null;
+if (query != null && query.startsWith("gif=")) {
+    selectedGIF = URLDecoder.decode(query.substring(4), "UTF-8");
+}
+String lastGIF = (selectedGIF != null)
+    ? selectedGIF
+    : (gifHistory.isEmpty()
+        ? "https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp"
+        : gifHistory.get(gifHistory.size() - 1));
             String response = """
             <html>
             <head>
@@ -157,52 +165,41 @@ public class GIFMachine {
     }
 
     static class DownloadHandler implements HttpHandler {
-       
         @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            gifHistory.add("https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp");
+        public void handle(HttpExchange exchange) throws IOException {  
+            String lastGIF;
+
             if (gifHistory.isEmpty()) {
-            String response = """
-                <html>
-                    <body style='background-color: black; text-align: center; color: white;'>
-                        <h1>Download Page</h1>
-                        <a href='/final_destination' style='color: yellow;'>Back</a>
-                    </body>
-                </html>
-            """;
-            sendResponse(exchange, response);
-            return;
-        }
-        //Get Connection to GIF URL
-        String lastGIF = gifHistory.get(gifHistory.size() - 1);
+                lastGIF = "https://media.tenor.com/4EhUju6UJtEAAAAm/grrr-rawr.webp";
+            }
+            else{
+                lastGIF = gifHistory.get(gifHistory.size() - 1);
+            }
             try {
                 URL url = new URL(lastGIF);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setDoInput(true);
-                conn.setConnectTimeout(10000);  //timeout if server doesn't respond
-                conn.setReadTimeout(20000);  //timout if server takes too long
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(20000);
 
                 int status = conn.getResponseCode();
-                //if request fail then stop
                 if (status != 200) {
                     //sendResponse(exchange, "Failed to fetch GIF. HTTP " + status, 502);
                     return;
                 }
-                //Gets file name from URL path
+
                 String path = url.getPath();
                 String filename = path.substring(path.lastIndexOf('/') + 1);
-                //give default filename if it does not have one
                 if (!filename.contains(".")) filename = "download.gif";
-                //tells browser to download and not display
+
                 exchange.getResponseHeaders().set("Content-Type", conn.getContentType());
                 exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-                //show GIF data to browser
+
                 try (InputStream in = conn.getInputStream(); OutputStream out = exchange.getResponseBody()) {
                     exchange.sendResponseHeaders(200, 0);
                     byte[] buffer = new byte[8192];
                     int read;
-                    //read and forward data in chunks
                     while ((read = in.read(buffer)) != -1) {
                         out.write(buffer, 0, read);
                     }
@@ -290,10 +287,14 @@ public class GIFMachine {
             // Most recent first
             for (int i = gifHistory.size() - 1; i >= 0; i--) {
                 String gif = gifHistory.get(i);
-                sidebarList.append(String.format(
-                    "<a href='/view?gif=%s'>GIF %d</a>", gif, gifHistory.size() - i
-                ));
-            }
+                String shortName = gif.substring(gif.lastIndexOf('/') + 1);
+                    sidebarList.append(String.format(
+                    "<a href='/final_destination?gif=%s'>%s</a>",
+                    URLEncoder.encode(gif, "UTF-8"),
+                    shortName
+    ));
+}
+
         }
 
         // ✅ Build full page response
